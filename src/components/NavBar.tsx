@@ -1,5 +1,14 @@
-import React, { useState } from "react";
-import { Layout, Typography, Menu, Space, Button, Dropdown, message } from "antd";
+import type React from "react";
+import { useState } from "react";
+import {
+  Layout,
+  Typography,
+  Menu,
+  Space,
+  Button,
+  Dropdown,
+  message,
+} from "antd";
 import { DownOutlined, LogoutOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 
@@ -13,7 +22,10 @@ interface NavBarProps {
 const NavBar: React.FC<NavBarProps> = ({ onMintNFTClick }) => {
   const [connected, setConnected] = useState(false);
   const [balance] = useState<number | null>(100); // Mock balance data
-  const [account] = useState({ address: "0xa1b2c3d4e5f67890123456789abcdef01234567890123456789abcdef01234567" }); // Mock account data
+  const [account] = useState({
+    address:
+      "0xa1b2c3d4e5f67890123456789abcdef01234567890123456789abcdef01234567",
+  }); // Mock account data
   const network = { name: "Testnet" }; // Mock network data
 
   const handleLogin = () => {
@@ -37,13 +49,26 @@ const NavBar: React.FC<NavBarProps> = ({ onMintNFTClick }) => {
       }}
     >
       <div style={{ display: "flex", alignItems: "center" }}>
-        <img src="/Aptos_Primary_WHT.png" alt="Aptos Logo" style={{ height: "30px", marginRight: 16 }} />
-        <Menu theme="dark" mode="horizontal" defaultSelectedKeys={["marketplace"]} style={{ backgroundColor: "#001529" }}>
+        <img
+          src="/Aptos_Primary_WHT.png"
+          alt="Aptos Logo"
+          style={{ height: "30px", marginRight: 16 }}
+        />
+        <Menu
+          theme="dark"
+          mode="horizontal"
+          defaultSelectedKeys={["marketplace"]}
+          style={{ backgroundColor: "#001529" }}
+        >
           <Menu.Item key="marketplace">
-            <Link to="/" style={{ color: "#fff" }}>Marketplace</Link>
+            <Link to="/" style={{ color: "#fff" }}>
+              Marketplace
+            </Link>
           </Menu.Item>
           <Menu.Item key="my-collection">
-            <Link to="/my-nfts" style={{ color: "#fff" }}>My Collection</Link>
+            <Link to="/my-nfts" style={{ color: "#fff" }}>
+              My Collection
+            </Link>
           </Menu.Item>
           <Menu.Item key="mint-nft" onClick={onMintNFTClick}>
             <span style={{ color: "#fff" }}>Mint NFT</span>
@@ -64,15 +89,20 @@ const NavBar: React.FC<NavBarProps> = ({ onMintNFTClick }) => {
                   <Text strong>Network:</Text> {network.name}
                 </Menu.Item>
                 <Menu.Item key="balance">
-                  <Text strong>Balance:</Text> {balance !== null ? `${balance} APT` : "Loading..."}
+                  <Text strong>Balance:</Text>{" "}
+                  {balance !== null ? `${balance} APT` : "Loading..."}
                 </Menu.Item>
                 <Menu.Divider />
-                <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
+                <Menu.Item
+                  key="logout"
+                  icon={<LogoutOutlined />}
+                  onClick={handleLogout}
+                >
                   Log Out
                 </Menu.Item>
               </Menu>
             }
-            trigger={['click']}
+            trigger={["click"]}
           >
             <Button type="primary">
               Connected <DownOutlined />
