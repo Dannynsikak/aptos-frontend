@@ -221,7 +221,11 @@ const MarketView: React.FC<MarketViewProps> = ({ marketplaceAddr }) => {
               }}
               cover={<img alt={nft.name} src={nft.uri} />}
               actions={[
-                <Button type="link" onClick={() => handleBuyClick(nft)}>
+                <Button
+                  key={nft.id}
+                  type="link"
+                  onClick={() => handleBuyClick(nft)}
+                >
                   Buy
                 </Button>,
               ]}
