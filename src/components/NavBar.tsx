@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import {
   Layout,
   Typography,
@@ -37,20 +38,28 @@ const NavBar: React.FC<NavBarProps> = ({ onMintNFTClick }) => {
     const fetchBalance = async () => {
       if (account) {
         try {
-          const resources: any[] = await client.getAccountResource(
-            account.address
+          // Define the resource type
+          const resourceType =
+            "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>";
+
+          // Fetch the account resource for the specified type
+          const accountResource = await client.getAccountResource(
+            account.address,
+            resourceType
           );
-          const accountResource = resources.find(
-            (r) => r.type === "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
-          );
+
+          // Extract balance value if the resource exists
           if (accountResource) {
             const balanceValue = (accountResource.data as any).coin.value;
-            setBalance(balanceValue ? parseInt(balanceValue) / 100000000 : 0);
+            setBalance(
+              balanceValue ? Number.parseInt(balanceValue) / 100000000 : 0
+            );
           } else {
             setBalance(0);
           }
         } catch (error) {
           console.error("Error fetching balance:", error);
+          setBalance(null);
         }
       }
     };
