@@ -1,5 +1,6 @@
 {
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-  "features": {
-  }
+  "features": {},
+  "forwardPorts": [3000], // Replace 3000 with the port your application uses
+  "postCreateCommand": "echo 'Dev container is ready!'" // Optional: Add commands to run after container setup
 }

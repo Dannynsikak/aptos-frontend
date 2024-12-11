@@ -38,10 +38,9 @@ function App() {
         type_arguments: [],
         arguments: [nameVector, descriptionVector, uriVector, values.rarity],
       };
+      console.log("Payload:", entryFunctionPayload);
 
-      const txnResponse = await (window as any).aptos.signAndSubmitTransaction(
-        entryFunctionPayload
-      );
+      const txnResponse = await (window as any).aptos.signAndSubmitTransaction({ payload: entryFunctionPayload });
       await client.waitForTransaction(txnResponse.hash);
 
       message.success("NFT minted successfully!");
