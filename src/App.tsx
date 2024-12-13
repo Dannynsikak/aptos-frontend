@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MyNFTs from "./pages/MyNFTs";
 import { AptosClient } from "aptos";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
+import Auction from "./pages/AuctionPage";
 
 const client = new AptosClient("https://fullnode.devnet.aptoslabs.com/v1");
 const marketplaceAddr =
@@ -62,10 +63,11 @@ function App() {
             element={<MarketView marketplaceAddr={marketplaceAddr} />}
           />
           <Route path="/my-nfts" element={<MyNFTs />} />
+          <Route path="/auction" element={<Auction/>}/>
         </Routes>
         <Modal
           title="Mint New NFT"
-          visible={isModalVisible}
+          open={isModalVisible}
           onCancel={() => setIsModalVisible(false)}
           footer={null}
         >
