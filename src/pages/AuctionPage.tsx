@@ -1,205 +1,119 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Form, Input, Button, message, List, Card } from "antd";
+import { List, Card, Layout, Row, Col, Button } from "antd";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-import { AptosClient } from "aptos";
+import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
+import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
 
-const client = new AptosClient("https://fullnode.devnet.aptoslabs.com/v1");
-const marketplaceAddr =
-  "0xc80d98f378efe25cd34d2f561f5b4866ddb31e602db2ab3bc0c9ff6be91cd93c";
+type DutchAuction = {
+  nft_id: string;
+  seller: string;
+  start_price: string;
+  reserve_price: string;
+  duration: string;
+  start_time: string;
+  is_active: boolean;
+  highest_bid: string;
+  highest_bidder: string;
+};
 
-function Auction() {
-  const { signAndSubmitTransaction } = useWallet();
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [auctions, setAuctions] = useState<number[]>([]);
-  const [loading, setLoading] = useState(false);
+const aptosConfig = new AptosConfig({ network: Network.DEVNET });
+const aptos = new Aptos(aptosConfig);
 
-  // Function to retrieve active auctions
-  const fetchActiveAuctions = async () => {
+const AuctionPage = () => {
+  const { account } = useWallet();
+  const [accountHasAuction, setAccountHasAuction] = useState<boolean>(false);
+  const [auctions, setAuctions] = useState<DutchAuction[]>([]);
+
+  const fetchAuction = async () => {
+    if (!account) return;
+
+    console.log("Fetching auction for account:", account.address);
+
+    const moduleAddress =
+      "0xc80d98f378efe25cd34d2f561f5b4866ddb31e602db2ab3bc0c9ff6be91cd93c";
+
     try {
-      setLoading(true);
-      const response = await client.view({
-        function: `${marketplaceAddr}::NFTMarketplace::get_active_auctions`,
-        type_arguments: [],
-        arguments: [marketplaceAddr],
+      const AuctionHouseResource = await aptos.getAccountResource({
+        accountAddress: account?.address,
+        resourceType: `${moduleAddress}::NFTMarketplace::AuctionHouse`,
       });
-  
-      // Transform response to ensure it's a number array
-      const auctionIds = response.map((item) => {
-        if (typeof item === "number") {
-          return item; // Keep valid numbers
-        }
-        throw new Error("Invalid auction ID type received"); // Handle unexpected types
-      });
-  
-      setAuctions(auctionIds); // Set the numeric IDs
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching active auctions:", error);
-      message.error("Failed to fetch auctions.");
-      setLoading(false);
+
+      console.log("Auction resource fetched successfully:", AuctionHouseResource);
+
+      const fetchedAuctions: DutchAuction[] =
+        AuctionHouseResource?.data?.auctions || [];
+      if (Array.isArray(fetchedAuctions)) {
+        setAuctions(fetchedAuctions);
+        setAccountHasAuction(fetchedAuctions.length > 0);
+      } else {
+        setAuctions([]);
+        setAccountHasAuction(false);
+      }
+    } catch (e: any) {
+      console.error("Error fetching auction resource:", e);
+      setAuctions([]);
+      setAccountHasAuction(false);
     }
   };
 
   useEffect(() => {
-    fetchActiveAuctions();
-  }, []);
-
-  // Function to open the modal
-  const handleOpenModal = () => setIsModalVisible(true);
-
-  // Function to list NFT for auction
-  const handleListAuction = async (values: {
-    nft_id: number;
-    start_price: number;
-    reserve_price: number;
-    duration: number;
-  }) => {
-    try {
-      const entryFunctionPayload = {
-        type: "entry_function_payload",
-        function: `${marketplaceAddr}::NFTMarketplace::list_nft_for_auction`,
-        type_arguments: [],
-        arguments: [marketplaceAddr,
-          values.nft_id,
-          values.start_price,
-          values.reserve_price,
-          values.duration,
-        ],
-      };
-      console.log("Payload:", entryFunctionPayload);
-
-      const txnResponse = await (window as any).aptos.signAndSubmitTransaction({ payload: entryFunctionPayload });
-      await client.waitForTransaction(txnResponse.hash);
-
-      message.success("NFT listed for auction successfully!");
-      setIsModalVisible(false);
-      fetchActiveAuctions();
-    } catch (error) {
-      console.error("Error listing NFT for auction:", error);
-      message.error("Failed to list NFT.");
-    }
-  };
-
-  // Function to bid on an auction
-  const handleBid = async (auctionId: number, payment: number) => {
-    try {
-      const entryFunctionPayload = {
-        type: "entry_function_payload",
-        function: `${marketplaceAddr}::NFTMarketplace::bid_on_auction`,
-        type_arguments: [],
-        arguments: [auctionId, payment],
-      };
-      console.log("Payload:", entryFunctionPayload);
-
-      const txnResponse = await (window as any).aptos.signAndSubmitTransaction({ payload: entryFunctionPayload });
-      await client.waitForTransaction(txnResponse.hash);
-
-      message.success("Bid placed successfully!");
-      fetchActiveAuctions();
-    } catch (error) {
-      console.error("Error placing bid:", error);
-      message.error("Failed to place bid.");
-    }
-  };
-
-  // Function to finalize an auction
-  const handleFinalizeAuction = async (auctionId: number) => {
-    try {
-      const entryFunctionPayload = {
-        type: "entry_function_payload",
-        function: `${marketplaceAddr}::NFTMarketplace::finalize_auction`,
-        type_arguments: [],
-        arguments: [auctionId],
-      };
-      console.log("Payload:", entryFunctionPayload);
-
-      const txnResponse = await (window as any).aptos.signAndSubmitTransaction({ payload: entryFunctionPayload });
-      await client.waitForTransaction(txnResponse.hash);
-
-      message.success("Auction finalized successfully!");
-      fetchActiveAuctions();
-    } catch (error) {
-      console.error("Error finalizing auction:", error);
-      message.error("Failed to finalize auction.");
-    }
-  };
+    fetchAuction();
+  }, [account?.address]);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <Button type="primary" onClick={handleOpenModal}>
-        List NFT for Auction
-      </Button>
-      <Modal
-        title="List NFT for Auction"
-        visible={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-      >
-        <Form onFinish={handleListAuction} layout="vertical">
-          <Form.Item
-            label="NFT ID"
-            name="nft_id"
-            rules={[{ required: true, message: "Please input the NFT ID!" }]}
-          >
-            <Input type="number" />
-          </Form.Item>
-          <Form.Item
-            label="Start Price"
-            name="start_price"
-            rules={[{ required: true, message: "Please input the start price!" }]}
-          >
-            <Input type="number" />
-          </Form.Item>
-          <Form.Item
-            label="Reserve Price"
-            name="reserve_price"
-            rules={[
-              { required: true, message: "Please input the reserve price!" },
-            ]}
-          >
-            <Input type="number" />
-          </Form.Item>
-          <Form.Item
-            label="Duration (seconds)"
-            name="duration"
-            rules={[{ required: true, message: "Please input the duration!" }]}
-          >
-            <Input type="number" />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" block>
-            List NFT
-          </Button>
-        </Form>
-      </Modal>
-      <h2>Active Auctions</h2>
-      <List
-        loading={loading}
-        grid={{ gutter: 16, column: 3 }}
-        dataSource={auctions}
-        renderItem={(auctionId) => (
-          <List.Item>
-            <Card
-              title={`Auction ID: ${auctionId}`}
-              actions={[
-                <Button
-                  onClick={() =>
-                    handleBid(auctionId, 100) // Replace 100 with your bid logic
-                  }
-                >
-                  Place Bid
-                </Button>,
-                <Button onClick={() => handleFinalizeAuction(auctionId)}>
-                  Finalize Auction
-                </Button>,
-              ]}
+    <div>
+      <Layout>
+        <Row align="middle">
+          <Col span={10} offset={2}>
+            <h1>Auction List</h1>
+          </Col>
+          <Col span={12} style={{ textAlign: "right", paddingRight: "200px" }}>
+            <WalletSelector />
+          </Col>
+        </Row>
+      </Layout>
+
+      {accountHasAuction && auctions.length > 0 ? (
+        <div style={{ marginTop: "2rem", padding: "0 20px" }}>
+          <h3>Available Auctions:</h3>
+          <List
+            grid={{ gutter: 16, column: 4 }}
+            dataSource={auctions}
+            renderItem={(auction) => (
+              <List.Item>
+                <Card title={`NFT ID: ${auction.nft_id}`}>
+                  <p>Seller: {auction.seller}</p>
+                  <p>Start Price: {auction.start_price}</p>
+                  <p>Reserve Price: {auction.reserve_price}</p>
+                  <p>Highest Bid: {auction.highest_bid}</p>
+                  <p>Highest Bidder: {auction.highest_bidder}</p>
+                  <p>Duration: {auction.duration}</p>
+                  <p>
+                    {auction.is_active
+                      ? "Status: Active"
+                      : "Status: Inactive"}
+                  </p>
+                </Card>
+              </List.Item>
+            )}
+          />
+        </div>
+      ) : (
+        <Row gutter={[0, 32]} style={{ marginTop: "2rem" }}>
+          <Col span={8} offset={8}>
+            <Button
+              block
+              type="primary"
+              style={{ height: "40px", backgroundColor: "#3f67ff" }}
+              onClick={() => console.log("Add new Auction button clicked.")}
             >
-              Details of auction {auctionId}
-            </Card>
-          </List.Item>
-        )}
-      />
+              Add new Auction
+            </Button>
+          </Col>
+        </Row>
+      )}
     </div>
   );
-}
+};
 
-export default Auction;
+export default AuctionPage;
